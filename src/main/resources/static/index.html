@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PageTurn Library — Book Search & Discovery</title>
+  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <a class="brand" href="#">
+      <span class="brand-icon">▣</span> PageTurn
+    </a>
+    <nav>
+      <a href="#catalog">Explore</a>
+      <a href="#about">About</a>
+    </nav>
+    <div class="header-actions">
+      <!-- User Profile Pill (Visible when logged in) -->
+      <div id="userProfileBadge" class="user-pill" style="display: none;">
+        <span class="user-avatar" id="userAvatarChar">S</span>
+        <div style="display: flex; flex-direction: column; line-height: 1.2;">
+          <span id="userDisplayName" style="font-weight: 700; color: var(--ink);">Saksham</span>
+          <span id="userRoleBadge" class="user-role-badge">Student</span>
+        </div>
+      </div>
+
+      <!-- Sign In Button (Visible when logged out) -->
+      <button id="signInNavBtn" class="btn-signin" onclick="openLoginModal()">
+        <span>🔐</span> Sign In
+      </button>
+
+      <!-- Student Portal Button -->
+      <button id="studentDashboardNavBtn" class="primary-btn" onclick="openStudentDashboardModal()" style="display: none;">
+        <span>📊</span> My Dashboard
+      </button>
+
+      <!-- Admin Exclusive Controls -->
+      <button id="studentsNavBtn" class="secondary-btn" onclick="openStudentManagementModal()" style="display: none;" title="Admin Student Directory">
+        <span>👥</span> Students
+      </button>
+      <button id="notifBellBtn" class="notif-bell-btn" onclick="openNotifModal()" title="View Alerts & Reminders" style="display: none;">
+        <span>🔔</span>
+        <span id="notifBadge" class="notif-badge" style="display: none;">0</span>
+      </button>
+      <button id="historyNavBtn" class="secondary-btn" onclick="openHistoryModal()" style="display: none;">📋 Records</button>
+      <button id="addBookBtn" class="primary-btn" onclick="openAddModal()" style="display: none;">+ Add Book</button>
+      <button id="seedBtn" class="outline-btn" style="display: none;">Load Demo</button>
+
+      <!-- Logout Button (Visible when logged in) -->
+      <button id="logoutBtn" class="btn-signout" onclick="handleLogout()" style="display: none;" title="Sign out of your session">
+        Sign Out
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero Section with Search -->
+  <section class="hero">
+    <div class="hero-badge">YOUR NEXT CHAPTER STARTS HERE</div>
+    <h1>Find a book.<br><em>Find your next idea.</em></h1>
+    <p>Search a curated collection of programming, productivity, literature, and self-growth.</p>
+    
+    <div class="search-box">
+      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input id="q" placeholder="Search by title, author, ISBN or category…" autocomplete="off">
+      <button id="searchBtn">Search</button>
+    </div>
+    
+    <!-- Auto-complete Suggestions (Trie DSA) -->
+    <div id="suggestions" class="suggestions-container"></div>
+    <p class="connection-tag">
+      <span class="status-indicator"></span>
+      <span id="status">Connecting to Supabase…</span>
+    </p>
+  </section>
+
+  <!-- Main Catalog Shelf -->
+  <main id="catalog">
+    <div class="catalog-heading">
+      <div>
+        <small class="section-label">THE COLLECTION</small>
+        <h2>Explore the shelves</h2>
+        <p class="shelf-subtitle">Click any book card to inspect details, or use the direct action buttons.</p>
+      </div>
+      <div class="controls-group">
+        <div class="filter-wrapper">
+          <label for="category">Category</label>
+          <select id="category">
+            <option value="">All categories</option>
+          </select>
+        </div>
+        <div class="filter-wrapper">
+          <label for="sort">Sort by</label>
+          <select id="sort">
+            <option value="title">Title A–Z</option>
+            <option value="rating">Top rated</option>
+            <option value="year">Newest</option>
+            <option value="copies">Most available</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Book Grid Container -->
+    <div id="grid" class="books-grid"></div>
+    
+    <!-- Empty State -->
+    <div id="empty" class="empty-state" style="display: none;" hidden>
+      <div class="empty-icon">📖</div>
+      <h3>No books found</h3>
+      <p>Try adjusting your search query, selecting another category, or seed demo books.</p>
+      <button class="primary-btn" onclick="$('seedBtn').click()">Load Demo Books</button>
+    </div>
+  </main>
+
+  <!-- About / Architecture Section -->
+  <section id="about" class="about-section">
+    <div class="about-content">
+      <h2>Smart search, thoughtful discovery.</h2>
+      <p>Powered by <strong>Java 21 Spring Boot</strong>, <strong>Supabase PostgreSQL</strong> with session pooling, and interactive data structures including <strong>Trie prefix autocomplete</strong> and <strong>Borrow Transaction Tracking</strong>.</p>
+    </div>
+    <div class="tech-stack-badges">
+      <span class="tech-pill">Spring Boot 3.4</span>
+      <span class="tech-pill">PostgreSQL 17</span>
+      <span class="tech-pill">Borrow Tracking</span>
+      <span class="tech-pill">RESTful API</span>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <span>PageTurn Library System</span>
+    <span>Crafted with Java Spring Boot & Supabase · 2026</span>
+  </footer>
+
+  <!-- 1. Book Detail Modal -->
+  <div id="bookModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog">
+      <button id="closeModalBtn" class="modal-close" onclick="closeBookModal()" aria-label="Close modal">&times;</button>
+      
+      <div id="modalViewMode">
+        <div class="modal-cover-banner" id="modalCover">
+          <div class="modal-cover-flex">
+            <div class="modal-book-cover-frame">
+              <img id="modalCoverImg" src="" alt="Book Cover" class="modal-cover-img" onerror="this.style.display='none'; document.getElementById('modalCoverFallback').style.display='flex';">
+              <div id="modalCoverFallback" class="modal-cover-fallback" style="display: none;">
+                <span style="font-size: 32px;">📖</span>
+              </div>
+              <div class="book-spine-shine"></div>
+            </div>
+            <div class="modal-cover-header-info">
+              <div class="modal-cover-badge" id="modalCategoryBadge">Programming</div>
+              <h2 id="modalTitle" class="modal-cover-title">Title</h2>
+              <p id="modalAuthor" class="modal-cover-author">by Author</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-body">
+          <div class="modal-meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">Rating</span>
+              <span id="modalRating" class="meta-value rating-stars">★★★★★</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Available Copies</span>
+              <span id="modalCopies" class="meta-value copies-badge">3 available</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Published</span>
+              <span id="modalYear" class="meta-value">2020</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">ISBN</span>
+              <span id="modalIsbn" class="meta-value mono">9780132350884</span>
+            </div>
+          </div>
+
+          <div class="modal-description-box">
+            <h4>About this book</h4>
+            <p id="modalDescription">Description text goes here...</p>
+          </div>
+
+          <!-- Borrowers History for this book -->
+          <div class="modal-borrows-box">
+            <h4>Active & Recent Borrowers</h4>
+            <div id="bookBorrowsList" class="borrowers-list">
+              <p class="no-borrowers-hint">No active borrowers for this title.</p>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button id="borrowBtn" class="primary-btn">
+              <span>📥</span> Borrow This Book
+            </button>
+            <button id="editBookBtn" class="secondary-btn">
+              <span>✎</span> Edit Details
+            </button>
+            <button id="deleteBookBtn" class="danger-btn">
+              <span>🗑</span> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Form (Inline inside Modal) -->
+      <form id="modalEditMode" class="modal-form" style="display: none;" hidden>
+        <h3>Edit Book Details</h3>
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="editTitle">Book Title *</label>
+            <input id="editTitle" required>
+          </div>
+          <div class="form-field full">
+            <label for="editAuthor">Author *</label>
+            <input id="editAuthor" required>
+          </div>
+          <div class="form-field">
+            <label for="editCategory">Category</label>
+            <input id="editCategory">
+          </div>
+          <div class="form-field">
+            <label for="editIsbn">ISBN</label>
+            <input id="editIsbn">
+          </div>
+          <div class="form-field">
+            <label for="editYear">Publication Year</label>
+            <input id="editYear" type="number" min="1500" max="2099">
+          </div>
+          <div class="form-field">
+            <label for="editCopies">Available Copies</label>
+            <input id="editCopies" type="number" min="0" max="1000" required>
+          </div>
+          <div class="form-field full">
+            <label for="editRating">Rating (1 to 5)</label>
+            <select id="editRating">
+              <option value="5">★★★★★ (5 Stars)</option>
+              <option value="4">★★★★☆ (4 Stars)</option>
+              <option value="3">★★★☆☆ (3 Stars)</option>
+              <option value="2">★★☆☆☆ (2 Stars)</option>
+              <option value="1">★☆☆☆☆ (1 Star)</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label for="editCoverUrl">Cover Image URL</label>
+            <input id="editCoverUrl" placeholder="e.g. /images/covers/isbn.jpg or https://...">
+          </div>
+          <div class="form-field full">
+            <label for="editDescription">Description</label>
+            <textarea id="editDescription" rows="4"></textarea>
+          </div>
+        </div>
+        <div class="modal-form-actions">
+          <button type="submit" class="primary-btn">Save Changes</button>
+          <button type="button" id="cancelEditBtn" class="outline-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Borrow Book Form Modal (Who is borrowing & when) -->
+  <div id="borrowModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog small-dialog">
+      <button class="modal-close" onclick="closeBorrowModal()" aria-label="Close modal">&times;</button>
+      <form id="borrowForm" class="modal-form">
+        <h3>Borrow Book</h3>
+        <p class="form-subtitle">Record who is checking out <strong id="borrowModalBookTitle"></strong>.</p>
+        
+        <input type="hidden" id="borrowBookId">
+
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="borrowerNameInput">Your Name / Borrower Name *</label>
+            <input id="borrowerNameInput" placeholder="e.g. Saksham Munda" required autofocus>
+          </div>
+          <div class="form-field full">
+            <label for="borrowerContactInput">Email / Phone / Student ID *</label>
+            <input id="borrowerContactInput" placeholder="e.g. saksham@example.com" required>
+          </div>
+          <div class="form-field full">
+            <label for="borrowDaysSelect">Loan Period</label>
+            <select id="borrowDaysSelect">
+              <option value="7">7 Days (1 Week)</option>
+              <option value="14" selected>14 Days (2 Weeks - Standard)</option>
+              <option value="30">30 Days (1 Month)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fine-policy-note">
+          <span>⚠️</span> 
+          <div>
+            <strong>Borrowing Rules:</strong>
+            <ul style="margin: 4px 0 0 16px; padding: 0; font-size: 11px; line-height: 1.4;">
+              <li><strong>No new book will be issued</strong> if you have an uncleared fine.</li>
+              <li>Late return fine: <strong>₹10 / day</strong> past due date.</li>
+              <li>Extra penalty for lost books: <strong>₹500</strong> replacement fee.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="modal-form-actions">
+          <button type="submit" class="primary-btn">Confirm Borrow</button>
+          <button type="button" class="outline-btn" onclick="closeBorrowModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Borrow History / Records Modal (Track who borrowed, when, and fines) -->
+  <div id="historyModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog large-dialog">
+      <button class="modal-close" onclick="closeHistoryModal()" aria-label="Close modal">&times;</button>
+      <div class="history-container">
+        <div class="history-header">
+          <div>
+            <h3>📋 Borrowing Records & Active Loans</h3>
+            <p class="form-subtitle">Track borrowers, check-out dates, overdue duration, late fees (₹10/day), and lost book penalties (₹500).</p>
+          </div>
+          <div class="history-header-right">
+            <span class="fine-rate-pill">💰 Late: ₹10/day · Lost: ₹500</span>
+            <div class="history-filters">
+              <select id="historyStatusFilter" onchange="loadBorrowRecords()">
+                <option value="">All Records</option>
+                <option value="BORROWED">Active Loans (Not Returned)</option>
+                <option value="RETURNED">Returned Books</option>
+                <option value="LOST">Lost Books (Replacement Due)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="history-table-wrapper">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Book Title</th>
+                <th>Borrower</th>
+                <th>Contact</th>
+                <th>Date Borrowed</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Late Fine</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr>
+                <td colspan="8" class="loading-cell">Loading borrowing records…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Notification & Reminders Modal (Fine Tracking & Alert Center) -->
+  <div id="notifModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog large-dialog">
+      <button class="modal-close" onclick="closeNotifModal()" aria-label="Close modal">&times;</button>
+      <div class="notif-container">
+        <div class="notif-header">
+          <div>
+            <h3>🔔 Overdue Alerts & Borrower Reminders</h3>
+            <p class="form-subtitle">Monitor loans approaching due dates, overdue books, accumulated fines, and dispatch reminder notices.</p>
+          </div>
+          <button class="secondary-btn" onclick="loadNotifications()">↻ Refresh</button>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="notif-stats-grid">
+          <div class="stat-card stat-overdue">
+            <span class="stat-number" id="statOverdue">0</span>
+            <span class="stat-title">Overdue Books</span>
+          </div>
+          <div class="stat-card stat-duesoon">
+            <span class="stat-number" id="statDueSoon">0</span>
+            <span class="stat-title">Due in 3 Days</span>
+          </div>
+          <div class="stat-card stat-fines">
+            <span class="stat-number" id="statUnpaidFines">₹0</span>
+            <span class="stat-title">Total Unpaid Fines</span>
+          </div>
+        </div>
+
+        <!-- Alerts / Reminders List -->
+        <div class="notif-alerts-wrapper">
+          <h4 style="margin-bottom: 12px; font-size: 14px; font-weight: 700;">Actionable Borrower Notices</h4>
+          <div id="notifList" class="notif-list">
+            <div class="loading-cell">Loading alerts…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Add New Book Modal -->
+  <div id="addModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog">
+      <button id="closeAddModalBtn" class="modal-close" onclick="closeAddModal()" aria-label="Close modal">&times;</button>
+      <form id="addBookForm" class="modal-form">
+        <h3>Add New Book to Collection</h3>
+        <p class="form-subtitle">Enter details to persist a new title into the Supabase database.</p>
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="addTitle">Book Title *</label>
+            <input id="addTitle" placeholder="e.g. Designing Data-Intensive Applications" required>
+          </div>
+          <div class="form-field full">
+            <label for="addAuthor">Author *</label>
+            <input id="addAuthor" placeholder="e.g. Martin Kleppmann" required>
+          </div>
+          <div class="form-field">
+            <label for="addCategory">Category</label>
+            <input id="addCategory" placeholder="e.g. Computer Science">
+          </div>
+          <div class="form-field">
+            <label for="addIsbn">ISBN</label>
+            <input id="addIsbn" placeholder="e.g. 9781449373320">
+          </div>
+          <div class="form-field">
+            <label for="addYear">Publication Year</label>
+            <input id="addYear" type="number" value="2023" min="1800" max="2099">
+          </div>
+          <div class="form-field">
+            <label for="addCopies">Available Copies</label>
+            <input id="addCopies" type="number" value="3" min="1" max="500">
+          </div>
+          <div class="form-field full">
+            <label for="addRating">Rating</label>
+            <select id="addRating">
+              <option value="5" selected>★★★★★ (5 Stars)</option>
+              <option value="4">★★★★☆ (4 Stars)</option>
+              <option value="3">★★★☆☆ (3 Stars)</option>
+              <option value="2">★★☆☆☆ (2 Stars)</option>
+              <option value="1">★☆☆☆☆ (1 Star)</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label for="addCoverUrl">Cover Image URL (Optional)</label>
+            <input id="addCoverUrl" placeholder="e.g. /images/covers/isbn.jpg or https://... (or leave blank to auto-detect)">
+          </div>
+          <div class="form-field full">
+            <label for="addDescription">Description</label>
+            <textarea id="addDescription" rows="3" placeholder="Brief summary or key takeaways of the book..."></textarea>
+          </div>
+        </div>
+        <div class="modal-form-actions">
+          <button type="submit" class="primary-btn">+ Add Book</button>
+          <button type="button" id="cancelAddBtn" class="outline-btn" onclick="closeAddModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. Role-Based Authentication Modal (Admin & Student) -->
+  <div id="loginModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog small-dialog">
+      <button class="modal-close" onclick="closeLoginModal()" aria-label="Close modal">&times;</button>
+      
+      <div style="padding: 4px 0 16px;">
+        <h3 style="font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 4px;">Sign in to PageTurn</h3>
+        <p class="form-subtitle">Choose your portal to access your library account.</p>
+      </div>
+
+      <!-- Segmented Portal Tabs -->
+      <div class="auth-tabs">
+        <button type="button" id="tabStudentBtn" class="auth-tab-btn active" onclick="switchLoginTab('STUDENT')">
+          <span>🎓</span> Student Portal
+        </button>
+        <button type="button" id="tabAdminBtn" class="auth-tab-btn" onclick="switchLoginTab('ADMIN')">
+          <span>🛡️</span> Admin Portal
+        </button>
+      </div>
+
+      <!-- Notice Banner for Students -->
+      <div id="studentNoticeBanner" class="auth-notice-banner">
+        <span style="font-size: 16px;">ℹ️</span>
+        <div>
+          <strong>Official Student Access:</strong> Student accounts are registered exclusively by the Library Administrator. There is no public registration option.
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" class="modal-form" onsubmit="handleLoginSubmit(event)">
+        <input type="hidden" id="loginTypeInput" value="STUDENT">
+
+        <div class="form-grid">
+          <div class="form-field full">
+            <label id="loginUserLabel" for="loginUsername">Student ID / Username *</label>
+            <input id="loginUsername" placeholder="e.g. STU-2026-001 or student" required autofocus autocomplete="username">
+          </div>
+          <div class="form-field full">
+            <label for="loginPassword">Password *</label>
+            <input id="loginPassword" type="password" placeholder="Enter your password" required autocomplete="current-password">
+          </div>
+        </div>
+
+        <div class="modal-form-actions" style="margin-top: 18px;">
+          <button type="submit" id="loginSubmitBtn" class="primary-btn" style="width: 100%; justify-content: center;">
+            <span>🔓</span> Sign In to Portal
+          </button>
+        </div>
+      </form>
+
+      <!-- Quick Demo Credentials for Fast Evaluation -->
+      <div class="demo-pills-container">
+        <span class="demo-pills-label">Quick Demo Accounts (1-Click Fill)</span>
+        <div class="demo-pills-grid">
+          <button type="button" class="demo-pill-btn" onclick="fillDemoLogin('STUDENT', 'student', 'student123')">
+            🎓 Saksham (Student)
+          </button>
+          <button type="button" class="demo-pill-btn" onclick="fillDemoLogin('STUDENT', 'aarav', 'aarav123')">
+            🎓 Aarav (Student)
+          </button>
+          <button type="button" class="demo-pill-btn" onclick="fillDemoLogin('ADMIN', 'admin', 'admin123')">
+            🛡️ Admin (System Admin)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Student Dashboard Modal (Self-Service Center) -->
+  <div id="studentDashboardModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog large-dialog">
+      <button class="modal-close" onclick="closeStudentDashboardModal()" aria-label="Close modal">&times;</button>
+      
+      <!-- Student Header Greeting -->
+      <div class="student-dash-header">
+        <div class="student-dash-title-box">
+          <div class="student-dash-avatar" id="dashAvatar">S</div>
+          <div>
+            <h2 class="student-dash-name" id="dashStudentName">Saksham Munda</h2>
+            <div class="student-dash-meta">
+              <span>Student ID: <strong id="dashStudentIdNum">STU-2026-001</strong></span>
+              <span>•</span>
+              <span id="dashDepartment">Computer Science</span>
+            </div>
+          </div>
+        </div>
+        <button class="secondary-btn" onclick="loadStudentDashboardData()">↻ Refresh</button>
+      </div>
+
+      <!-- KPI Metrics Cards -->
+      <div class="student-kpi-grid">
+        <div class="kpi-card kpi-card-loans">
+          <div class="kpi-card-icon">📚</div>
+          <div class="kpi-card-number" id="dashActiveLoansCount">0</div>
+          <div class="kpi-card-label">Active Loans</div>
+        </div>
+        <div class="kpi-card kpi-card-duesoon">
+          <div class="kpi-card-icon">⏳</div>
+          <div class="kpi-card-number" id="dashDueSoonCount">0</div>
+          <div class="kpi-card-label">Due Soon / Overdue</div>
+        </div>
+        <div class="kpi-card kpi-card-reservations">
+          <div class="kpi-card-icon">🔖</div>
+          <div class="kpi-card-number" id="dashReservationsCount">0</div>
+          <div class="kpi-card-label">Book Reservations</div>
+        </div>
+        <div class="kpi-card kpi-card-fines">
+          <div class="kpi-card-icon">💰</div>
+          <div class="kpi-card-number" id="dashFinesAmount">₹0</div>
+          <div class="kpi-card-label">Outstanding Fines</div>
+        </div>
+      </div>
+
+      <!-- Segmented View Tabs inside Dashboard -->
+      <div class="segmented-tabs-wrapper">
+        <div class="segmented-tabs">
+          <button type="button" id="tabLoansBtn" class="segmented-tab-btn active" onclick="switchStudentTab('loans')">
+            📚 My Active Loans & Due Tracker
+          </button>
+          <button type="button" id="tabReservationsBtn" class="segmented-tab-btn" onclick="switchStudentTab('reservations')">
+            🔖 My Book Reservations
+          </button>
+          <button type="button" id="tabStudentHistoryBtn" class="segmented-tab-btn" onclick="switchStudentTab('history')">
+            📜 Borrowing History
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content 1: Active Loans & Live Due Dates -->
+      <div id="studentTabLoans" class="student-tab-panel">
+        <div id="studentLoansList" class="loans-list">
+          <div class="loading-cell">Loading active borrowed books…</div>
+        </div>
+      </div>
+
+      <!-- Tab Content 2: My Book Reservations -->
+      <div id="studentTabReservations" class="student-tab-panel" style="display: none;">
+        <div id="studentReservationsList" class="loans-list">
+          <div class="loading-cell">Loading your reservations…</div>
+        </div>
+      </div>
+
+      <!-- Tab Content 3: Student History -->
+      <div id="studentTabHistory" class="student-tab-panel" style="display: none; padding: 0 24px 24px;">
+        <div class="history-table-wrapper" style="max-height: 380px;">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Book Title</th>
+                <th>Borrowed On</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Fine Details</th>
+              </tr>
+            </thead>
+            <tbody id="studentHistoryTableBody">
+              <tr><td colspan="5" class="loading-cell">Loading history…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 8. Admin Student Directory & Management Modal -->
+  <div id="studentManagementModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog large-dialog">
+      <button class="modal-close" onclick="closeStudentManagementModal()" aria-label="Close modal">&times;</button>
+      
+      <div class="history-container">
+        <div class="history-header">
+          <div>
+            <h3>👥 Student Directory & Records Management</h3>
+            <p class="form-subtitle">Exclusive Admin Control: Register students, modify details, activate/deactivate accounts, and inspect loans.</p>
+          </div>
+          <button class="primary-btn" onclick="openRegisterStudentModal()">
+            <span>+</span> Register New Student
+          </button>
+        </div>
+
+        <!-- Toolbar: Search & Filter -->
+        <div class="student-toolbar">
+          <div class="student-search-box">
+            <span>🔍</span>
+            <input id="studentSearchInput" placeholder="Search by name, ID, or department…" oninput="filterStudentsTable()">
+          </div>
+          <div class="history-filters">
+            <select id="studentStatusFilter" onchange="filterStudentsTable()">
+              <option value="">All Accounts</option>
+              <option value="ACTIVE">Active Only</option>
+              <option value="DEACTIVATED">Deactivated Only</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Students Table -->
+        <div class="history-table-wrapper">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Full Name</th>
+                <th>Contact</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Active Loans</th>
+                <th>Unpaid Fine</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+              <tr>
+                <td colspan="8" class="loading-cell">Loading student directory…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Admin Register Student Sub-Modal -->
+  <div id="registerStudentModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog small-dialog">
+      <button class="modal-close" onclick="closeRegisterStudentModal()" aria-label="Close modal">&times;</button>
+      <form id="registerStudentForm" class="modal-form" onsubmit="handleRegisterStudentSubmit(event)">
+        <h3>Register New Student</h3>
+        <p class="form-subtitle">Create a student account. Students can only log in once registered here.</p>
+        
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="regStudentId">Student ID / Roll Number *</label>
+            <input id="regStudentId" placeholder="e.g. STU-2026-003" required autofocus>
+          </div>
+          <div class="form-field full">
+            <label for="regFullName">Full Name *</label>
+            <input id="regFullName" placeholder="e.g. Ananya Roy" required>
+          </div>
+          <div class="form-field full">
+            <label for="regEmail">University Email</label>
+            <input id="regEmail" type="email" placeholder="e.g. ananya@university.edu">
+          </div>
+          <div class="form-field">
+            <label for="regPhone">Phone Number</label>
+            <input id="regPhone" placeholder="e.g. +91 98765 11223">
+          </div>
+          <div class="form-field">
+            <label for="regDepartment">Department</label>
+            <input id="regDepartment" placeholder="e.g. Computer Science">
+          </div>
+          <div class="form-field full">
+            <label for="regPassword">Initial Password</label>
+            <input id="regPassword" placeholder="Default: student123">
+          </div>
+        </div>
+
+        <div class="modal-form-actions">
+          <button type="submit" class="primary-btn">Create Student Record</button>
+          <button type="button" class="outline-btn" onclick="closeRegisterStudentModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 10. Admin Edit Student Sub-Modal -->
+  <div id="editStudentModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog small-dialog">
+      <button class="modal-close" onclick="closeEditStudentModal()" aria-label="Close modal">&times;</button>
+      <form id="editStudentForm" class="modal-form" onsubmit="handleEditStudentSubmit(event)">
+        <input type="hidden" id="editStudentId">
+        <h3>Edit Student Details</h3>
+        <p class="form-subtitle">Update record for <strong id="editStudentIdDisplay"></strong>.</p>
+        
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="editStudentFullName">Full Name *</label>
+            <input id="editStudentFullName" required>
+          </div>
+          <div class="form-field full">
+            <label for="editStudentEmail">Email Address</label>
+            <input id="editStudentEmail" type="email">
+          </div>
+          <div class="form-field">
+            <label for="editStudentPhone">Phone Number</label>
+            <input id="editStudentPhone">
+          </div>
+          <div class="form-field">
+            <label for="editStudentDepartment">Department</label>
+            <input id="editStudentDepartment">
+          </div>
+          <div class="form-field full">
+            <label for="editStudentNewPassword">Set New Password (Optional)</label>
+            <input id="editStudentNewPassword" placeholder="Leave blank to keep unchanged">
+          </div>
+        </div>
+
+        <div class="modal-form-actions">
+          <button type="submit" class="primary-btn">Save Changes</button>
+          <button type="button" class="outline-btn" onclick="closeEditStudentModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 11. Student Reserve Book Modal -->
+  <div id="reservationModal" class="modal-backdrop" style="display: none;" hidden>
+    <div class="modal-dialog small-dialog">
+      <button class="modal-close" onclick="closeReservationModal()" aria-label="Close modal">&times;</button>
+      <form id="reservationForm" class="modal-form" onsubmit="handleReservationSubmit(event)">
+        <input type="hidden" id="reserveBookId">
+        <h3>Reserve Book for Pickup</h3>
+        <p class="form-subtitle">Place a hold on <strong id="reserveModalBookTitle"></strong>.</p>
+        
+        <div class="fine-policy-note" style="margin-bottom: 16px;">
+          <span>🔖</span>
+          <div style="font-size: 12px; line-height: 1.45;">
+            <strong>Reservation Policy:</strong> Your reservation will hold this book for 7 days upon arrival. You will be notified when it becomes ready for pickup.
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="reserveNotes">Optional Note / Pickup Preference</label>
+            <input id="reserveNotes" placeholder="e.g. Please hold for Monday morning">
+          </div>
+        </div>
+
+        <div class="modal-form-actions">
+          <button type="submit" class="primary-btn">Confirm Reservation</button>
+          <button type="button" class="outline-btn" onclick="closeReservationModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js?v=7"></script>
+</body>
+</html>
